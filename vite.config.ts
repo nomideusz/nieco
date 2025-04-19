@@ -10,7 +10,7 @@ export default defineConfig({
     target: 'esnext',
     outDir: 'dist',
     assetsDir: 'assets',
-    minify: 'terser',
+    minify: 'esbuild',
     sourcemap: false,
   },
   preview: {

@@ -11,6 +11,7 @@
   },
   "license": "MIT",
   "devDependencies": {
+    "terser": "^5.39.0",
     "typescript": "^5.7.2",
     "vite": "^6.0.0",
     "vite-plugin-solid": "^2.11.6"
