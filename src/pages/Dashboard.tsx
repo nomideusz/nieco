@@ -1,181 +1,166 @@
-import { createSignal } from 'solid-js';
-import { useNavigate, useSearchParams } from "@solidjs/router";
+import { createSignal, Show, onMount } from 'solid-js';
+import { useNavigate } from "@solidjs/router";
+import AddHabit from '../components/AddHabit';
+import HabitList from '../components/HabitList';
+import Statistics from '../components/Statistics';
+import LoginTest from '../components/LoginTest';
+import habitStore from '../store/habitStore';
+import userStore from '../store/userStore';
 
 const Dashboard = () => {
   const navigate = useNavigate();
-  const [searchParams, setSearchParams] = useSearchParams();
+  const { habits } = habitStore;
+  const { user, setIsLoginModalOpen } = userStore;
+  
+  const [activeTab, setActiveTab] = createSignal('habits');
 
-  // Przykładowe dane
-  const items = [
-    { id: 1, name: "Zadanie 1", category: "praca", priority: "wysoki" },
-    { id: 2, name: "Zadanie 2", category: "dom", priority: "średni" },
-    { id: 3, name: "Zadanie 3", category: "hobby", priority: "niski" },
-    { id: 4, name: "Zadanie 4", category: "praca", priority: "wysoki" },
-    { id: 5, name: "Zadanie 5", category: "dom", priority: "niski" },
-    { id: 6, name: "Zadanie 6", category: "hobby", priority: "średni" }
-  ];
+  // Check if user is authenticated and show login modal if not
+  onMount(() => {
+    if (!user.isLoggedIn) {
+      setIsLoginModalOpen(true);
+    }
+  });
 
-  // Filtrowanie elementów na podstawie parametrów URL
-  const filteredItems = () => {
-    return items.filter(item => {
-      // Jeśli nie wybrano kategorii, zwracamy wszystkie elementy
-      if (!searchParams.category) return true;
-      // W przeciwnym razie filtrujemy po kategorii
-      return item.category === searchParams.category;
-    }).filter(item => {
-      // Jeśli nie wybrano priorytetu, zwracamy wszystkie elementy
-      if (!searchParams.priority) return true;
-      // W przeciwnym razie filtrujemy po priorytecie
-      return item.priority === searchParams.priority;
-    });
-  };
-
-  // Zmiana kategorii
-  const setCategory = (category: string) => {
-    setSearchParams({ category, priority: searchParams.priority });
-  };
-
-  // Zmiana priorytetu
-  const setPriority = (priority: string) => {
-    setSearchParams({ category: searchParams.category, priority });
-  };
-
-  // Resetowanie filtrów
-  const resetFilters = () => {
-    setSearchParams({});
-  };
-
-  const goToHomePage = () => {
-    navigate("/", { replace: false });
-  };
-
-  const goToAboutPage = () => {
-    // Z replace: true usuwamy aktualną stronę ze stosu historii
-    navigate("/about", { replace: true });
-  };
-
-  return (
-    <div style="padding: 20px;">
-      <h1>Panel użytkownika</h1>
-      <p>Tutaj znajdziesz swoje ustawienia i statystyki.</p>
-      
-      <div style="margin-top: 20px; background-color: #f5f7fa; padding: 20px; border-radius: 8px;">
-        <h2>Przykład użycia parametrów wyszukiwania (useSearchParams)</h2>
-        <p>Aktualne parametry: <strong>category={searchParams.category || "wszystkie"}</strong>, <strong>priority={searchParams.priority || "wszystkie"}</strong></p>
-        
-        <div style="margin-top: 15px;">
-          <h3>Filtruj według kategorii</h3>
-          <div style="display: flex; gap: 10px; margin-top: 10px;">
-            <button 
-              onClick={() => setCategory("praca")}
-              style={`padding: 6px 12px; border: none; border-radius: 4px; cursor: pointer; 
-                     background-color: ${searchParams.category === "praca" ? "#4a6fa5" : "#e0e0e0"}; 
-                     color: ${searchParams.category === "praca" ? "white" : "black"};`}
-            >
-              Praca
-            </button>
-            <button 
-              onClick={() => setCategory("dom")}
-              style={`padding: 6px 12px; border: none; border-radius: 4px; cursor: pointer; 
-                     background-color: ${searchParams.category === "dom" ? "#4a6fa5" : "#e0e0e0"}; 
-                     color: ${searchParams.category === "dom" ? "white" : "black"};`}
-            >
-              Dom
-            </button>
-            <button 
-              onClick={() => setCategory("hobby")}
-              style={`padding: 6px 12px; border: none; border-radius: 4px; cursor: pointer; 
-                     background-color: ${searchParams.category === "hobby" ? "#4a6fa5" : "#e0e0e0"}; 
-                     color: ${searchParams.category === "hobby" ? "white" : "black"};`}
-            >
-              Hobby
-            </button>
-          </div>
+  // When not logged in, show login message
+  if (!user.isLoggedIn) {
+    return (
+      <div class="card" style="
+        padding: 40px 30px; 
+        text-align: center; 
+        max-width: 600px;
+        margin: 60px auto 0;
+        animation: fadeIn var(--transition-medium) forwards;
+      ">
+        <div style="
+          width: 80px;
+          height: 80px;
+          border-radius: var(--border-radius-full);
+          background-color: rgba(74, 111, 165, 0.1);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          margin: 0 auto 20px;
+        ">
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M12 4L12 14" stroke="var(--primary-color)" stroke-width="2" stroke-linecap="round"/>
+            <path d="M12 18V20" stroke="var(--primary-color)" stroke-width="2" stroke-linecap="round"/>
+            <path d="M4.93 10.93C4.00239 11.8576 3.35828 13.0129 3.07144 14.2726C2.7846 15.5322 2.8649 16.8525 3.3034 18.0657C3.7419 19.2789 4.52176 20.3346 5.55522 21.1059C6.58868 21.8771 7.83046 22.3313 9.115 22.415C10.3995 22.4986 11.6885 22.2088 12.8346 21.5777C13.9807 20.9467 14.9438 20.0021 15.6133 18.8457C16.2829 17.6894 16.6329 16.3663 16.6239 15.0209C16.6149 13.6755 16.2473 12.3582 15.562 11.212" stroke="var(--primary-color)" stroke-width="2" stroke-linecap="round"/>
+          </svg>
         </div>
-        
-        <div style="margin-top: 15px;">
-          <h3>Filtruj według priorytetu</h3>
-          <div style="display: flex; gap: 10px; margin-top: 10px;">
-            <button 
-              onClick={() => setPriority("wysoki")}
-              style={`padding: 6px 12px; border: none; border-radius: 4px; cursor: pointer; 
-                     background-color: ${searchParams.priority === "wysoki" ? "#4a6fa5" : "#e0e0e0"}; 
-                     color: ${searchParams.priority === "wysoki" ? "white" : "black"};`}
-            >
-              Wysoki
-            </button>
-            <button 
-              onClick={() => setPriority("średni")}
-              style={`padding: 6px 12px; border: none; border-radius: 4px; cursor: pointer; 
-                     background-color: ${searchParams.priority === "średni" ? "#4a6fa5" : "#e0e0e0"}; 
-                     color: ${searchParams.priority === "średni" ? "white" : "black"};`}
-            >
-              Średni
-            </button>
-            <button 
-              onClick={() => setPriority("niski")}
-              style={`padding: 6px 12px; border: none; border-radius: 4px; cursor: pointer; 
-                     background-color: ${searchParams.priority === "niski" ? "#4a6fa5" : "#e0e0e0"}; 
-                     color: ${searchParams.priority === "niski" ? "white" : "black"};`}
-            >
-              Niski
-            </button>
-          </div>
-        </div>
-        
+        <h1 style="
+          font-size: 1.8rem; 
+          color: var(--text-primary);
+          margin-bottom: 16px;
+        ">Dostęp ograniczony</h1>
+        <p style="
+          margin: 0 0 30px; 
+          color: var(--text-secondary); 
+          line-height: 1.6;
+          font-size: 1rem;
+        ">
+          Aby zobaczyć swój panel, musisz się zalogować. Kliknij przycisk poniżej, aby się zalogować lub zarejestrować.
+        </p>
         <button 
-          onClick={resetFilters}
-          style="padding: 6px 12px; border: none; border-radius: 4px; cursor: pointer; background-color: #e74c3c; color: white; margin-top: 15px;"
+          onClick={() => setIsLoginModalOpen(true)}
+          class="btn btn-primary"
         >
-          Resetuj filtry
+          Zaloguj się
         </button>
         
-        <div style="margin-top: 20px;">
-          <h3>Lista zadań po filtrowaniu:</h3>
-          <ul style="list-style-type: none; padding: 0;">
-            {filteredItems().map(item => (
-              <li style="margin-bottom: 8px; padding: 10px; border: 1px solid #e0e0e0; border-radius: 4px; background-color: white;">
-                <div style="display: flex; justify-content: space-between;">
-                  <strong>{item.name}</strong>
-                  <div>
-                    <span style="margin-right: 10px; padding: 2px 6px; background-color: #f0f0f0; border-radius: 4px; font-size: 0.8rem;">
-                      {item.category}
-                    </span>
-                    <span style={`padding: 2px 6px; border-radius: 4px; font-size: 0.8rem; 
-                                background-color: ${item.priority === 'wysoki' ? '#f8d7da' : item.priority === 'średni' ? '#fff3cd' : '#d1e7dd'};
-                                color: ${item.priority === 'wysoki' ? '#721c24' : item.priority === 'średni' ? '#856404' : '#155724'};`}>
-                      {item.priority}
-                    </span>
-                  </div>
-                </div>
-              </li>
-            ))}
-            {filteredItems().length === 0 && (
-              <li style="text-align: center; padding: 20px; border: 1px dashed #e0e0e0; border-radius: 4px;">
-                Brak zadań spełniających kryteria filtrowania
-              </li>
-            )}
-          </ul>
-        </div>
+        <LoginTest />
+      </div>
+    );
+  }
+
+  return (
+    <div style="
+      padding: 20px;
+      animation: fadeIn var(--transition-medium) forwards;
+    ">
+      <h1 style="
+        color: var(--text-primary);
+        font-size: 1.8rem;
+        margin-bottom: 24px;
+        font-weight: 700;
+      ">Panel użytkownika</h1>
+      
+      <LoginTest />
+      
+      {/* Tabs */}
+      <div style="
+        display: flex; 
+        margin-bottom: 30px; 
+        border-bottom: 1px solid var(--border-color);
+        padding-left: 8px;
+      ">
+        <button 
+          onClick={() => setActiveTab('habits')}
+          style={`
+            padding: 12px 24px; 
+            border: none; 
+            background: none; 
+            cursor: pointer; 
+            font-weight: ${activeTab() === 'habits' ? '600' : 'normal'}; 
+            color: ${activeTab() === 'habits' ? 'var(--primary-color)' : 'var(--text-secondary)'};
+            border-bottom: ${activeTab() === 'habits' ? '3px solid var(--primary-color)' : 'none'};
+            transition: all var(--transition-fast);
+            font-size: 1rem;
+          `}
+        >
+          Moje nawyki
+        </button>
+        <button 
+          onClick={() => setActiveTab('stats')}
+          style={`
+            padding: 12px 24px; 
+            border: none; 
+            background: none; 
+            cursor: pointer; 
+            font-weight: ${activeTab() === 'stats' ? '600' : 'normal'}; 
+            color: ${activeTab() === 'stats' ? 'var(--primary-color)' : 'var(--text-secondary)'};
+            border-bottom: ${activeTab() === 'stats' ? '3px solid var(--primary-color)' : 'none'};
+            transition: all var(--transition-fast);
+            font-size: 1rem;
+          `}
+        >
+          Statystyki
+        </button>
       </div>
       
-      <div style="margin-top: 30px;">
-        <h2>Przykład programowej nawigacji</h2>
-        <div style="display: flex; gap: 10px; margin-top: 10px;">
-          <button 
-            onClick={goToHomePage}
-            style="padding: 8px 16px; background-color: #4a6fa5; color: white; border: none; border-radius: 4px; cursor: pointer;"
-          >
-            Przejdź do strony głównej
-          </button>
-          <button 
-            onClick={goToAboutPage}
-            style="padding: 8px 16px; background-color: #345a8a; color: white; border: none; border-radius: 4px; cursor: pointer;"
-          >
-            Przejdź do strony O aplikacji (replace)
-          </button>
+      {/* Content based on active tab */}
+      <Show when={activeTab() === 'habits'}>
+        <div style="
+          display: grid; 
+          grid-template-columns: 1fr 1fr; 
+          gap: 30px;
+        ">
+          <div class="card" style="padding: 30px; height: fit-content;">
+            <h2 style="
+              color: var(--primary-color);
+              font-size: 1.4rem;
+              margin-top: 0;
+              margin-bottom: 20px;
+              border-bottom: 2px solid var(--border-color);
+              padding-bottom: 12px;
+            ">Dodaj nawyk</h2>
+            <AddHabit />
+          </div>
+          <div>
+            <h2 style="
+              color: var(--primary-color);
+              font-size: 1.4rem;
+              margin-top: 0;
+              margin-bottom: 20px;
+              padding-left: 5px;
+            ">Twoje nawyki</h2>
+            <HabitList />
+          </div>
         </div>
-      </div>
+      </Show>
+      
+      <Show when={activeTab() === 'stats'}>
+        <Statistics />
+      </Show>
     </div>
   );
 };

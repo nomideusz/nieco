@@ -1,95 +1,221 @@
 import { JSX, createResource } from 'solid-js';
 import { useParams, A } from '@solidjs/router';
-
-interface UserData {
-  id: number;
-  name: string;
-  email: string;
-  role: string;
-  joinDate: string;
-}
-
-// Simulate fetching a single user from an API
-const fetchUserDetails = async (userId: string): Promise<UserData> => {
-  // Simulate network delay
-  await new Promise(resolve => setTimeout(resolve, 700));
-  
-  // Sample user data based on ID
-  const users: Record<string, UserData> = {
-    '1': { id: 1, name: 'John Doe', email: 'john@example.com', role: 'Admin', joinDate: '2022-01-15' },
-    '2': { id: 2, name: 'Jane Smith', email: 'jane@example.com', role: 'Editor', joinDate: '2022-03-22' },
-    '3': { id: 3, name: 'Bob Johnson', email: 'bob@example.com', role: 'User', joinDate: '2022-05-10' },
-    '4': { id: 4, name: 'Alice Brown', email: 'alice@example.com', role: 'User', joinDate: '2022-06-08' },
-  };
-  
-  const user = users[userId];
-  
-  if (!user) {
-    throw new Error(`User with ID ${userId} not found`);
-  }
-  
-  return user;
-};
+import { userApi, User, formatUserName } from '../services/api';
 
 const UserDetails = (): JSX.Element => {
   const params = useParams();
-  const [user] = createResource(() => params.userId, fetchUserDetails);
+  const [user] = createResource(() => params.userId, userApi.getUser);
+  
+  const formatDate = (dateString?: string) => {
+    if (!dateString) return '';
+    const date = new Date(dateString);
+    return `${date.getDate()}.${date.getMonth() + 1}.${date.getFullYear()}`;
+  };
   
   return (
-    <div class="user-details">
-      <h2 class="text-xl font-semibold mb-4">User Details</h2>
+    <div style="
+      padding: 20px;
+      animation: fadeIn var(--transition-medium) forwards;
+    ">
+      <h1 style="
+        color: var(--text-primary);
+        font-size: 1.8rem;
+        margin-bottom: 24px;
+        font-weight: 700;
+      ">
+        Szczegóły użytkownika
+      </h1>
       
-      <div class="loading-state">
-        {user.loading && <p>Loading user details...</p>}
-      </div>
+      {user.loading && (
+        <div class="card" style="padding: 30px; text-align: center;">
+          <p style="color: var(--text-secondary);">Ładowanie danych użytkownika...</p>
+        </div>
+      )}
       
-      <div class="error-state">
-        {user.error && (
-          <div class="p-4 bg-red-100 text-red-700 rounded mb-4">
-            <p>Error: {user.error.message}</p>
-            <p class="mt-2">
-              <A href="/users" class="text-blue-500 hover:underline">
-                Back to Users List
-              </A>
-            </p>
-          </div>
-        )}
-      </div>
-      
-      {user() && (
-        <div class="bg-white p-5 rounded shadow">
-          <div class="grid grid-cols-2 gap-4">
-            <div class="field-label font-medium">Name:</div>
-            <div>{user()?.name}</div>
-            
-            <div class="field-label font-medium">Email:</div>
-            <div>{user()?.email}</div>
-            
-            <div class="field-label font-medium">Role:</div>
-            <div>{user()?.role}</div>
-            
-            <div class="field-label font-medium">Join Date:</div>
-            <div>{user()?.joinDate}</div>
-            
-            <div class="field-label font-medium">User ID:</div>
-            <div>{user()?.id}</div>
-          </div>
-          
-          <div class="mt-6 flex space-x-4">
-            <A 
-              href={`/users/${user()?.id}/posts`} 
-              class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
-            >
-              View User's Posts
-            </A>
+      {user.error && (
+        <div style="
+          padding: 16px; 
+          background-color: rgba(231, 76, 60, 0.1); 
+          border-radius: var(--border-radius-md); 
+          color: var(--danger-color);
+          margin-bottom: 20px;
+          border-left: 3px solid var(--danger-color);
+        ">
+          <p>Błąd: {user.error.message}</p>
+          <p style="margin-top: 12px;">
             <A 
               href="/users" 
-              class="px-4 py-2 bg-gray-300 text-gray-800 rounded hover:bg-gray-400"
+              style="
+                color: var(--primary-color);
+                text-decoration: none;
+                &:hover {
+                  text-decoration: underline;
+                }
+              "
             >
-              Back to List
+              Powrót do listy użytkowników
             </A>
-          </div>
+          </p>
         </div>
+      )}
+      
+      {user() && (
+        <>
+          <div class="card" style="padding: 30px;">
+            <div style="display: flex; gap: 30px; margin-bottom: 30px;">
+              <div style="flex-shrink: 0; text-align: center;">
+                <img 
+                  src={user()?.picture.large}
+                  alt={formatUserName(user()!)}
+                  style="
+                    width: 140px; 
+                    height: 140px; 
+                    border-radius: 50%; 
+                    object-fit: cover;
+                    border: 4px solid var(--bg-light);
+                    box-shadow: var(--card-shadow);
+                  "
+                />
+              </div>
+              <div style="flex-grow: 1;">
+                <h2 style="
+                  color: var(--primary-color);
+                  font-size: 1.6rem;
+                  margin-top: 0;
+                  margin-bottom: 8px;
+                  font-weight: 700;
+                ">{formatUserName(user()!)}</h2>
+                <p style="
+                  color: var(--text-secondary);
+                  margin: 0 0 4px 0;
+                  font-size: 1.1rem;
+                ">{user()?.email}</p>
+                <p style="
+                  color: var(--text-secondary);
+                  margin: 0 0 20px 0;
+                  font-size: 0.95rem;
+                ">{user()?.location.city}, {user()?.location.country}</p>
+                
+                <div style="display: flex; gap: 16px;">
+                  <A 
+                    href={`/users/${user()?.login.uuid}/posts`} 
+                    class="btn btn-primary"
+                  >
+                    Zobacz posty użytkownika
+                  </A>
+                  <A 
+                    href="/users" 
+                    class="btn btn-secondary"
+                  >
+                    Powrót do listy
+                  </A>
+                </div>
+              </div>
+            </div>
+            
+            <div style="
+              display: grid;
+              grid-template-columns: 1fr 1fr;
+              gap: 20px;
+              border-top: 1px solid var(--border-color);
+              padding-top: 20px;
+            ">
+              <div>
+                <h3 style="
+                  color: var(--text-secondary);
+                  font-size: 1rem;
+                  margin-top: 0;
+                  margin-bottom: 12px;
+                  text-transform: uppercase;
+                  letter-spacing: 0.5px;
+                  font-weight: 600;
+                ">Informacje kontaktowe</h3>
+                
+                <div style="
+                  display: grid;
+                  grid-template-columns: 120px 1fr;
+                  row-gap: 12px;
+                  column-gap: 10px;
+                ">
+                  <div style="font-weight: 600; color: var(--text-secondary);">Telefon:</div>
+                  <div style="color: var(--text-primary);">{user()?.phone}</div>
+                  
+                  <div style="font-weight: 600; color: var(--text-secondary);">Komórka:</div>
+                  <div style="color: var(--text-primary);">{user()?.cell}</div>
+                  
+                  <div style="font-weight: 600; color: var(--text-secondary);">Login:</div>
+                  <div style="color: var(--text-primary);">{user()?.login.username}</div>
+                  
+                  <div style="font-weight: 600; color: var(--text-secondary);">ID:</div>
+                  <div style="color: var(--text-primary);">{user()?.login.uuid}</div>
+                </div>
+              </div>
+              
+              <div>
+                <h3 style="
+                  color: var(--text-secondary);
+                  font-size: 1rem;
+                  margin-top: 0;
+                  margin-bottom: 12px;
+                  text-transform: uppercase;
+                  letter-spacing: 0.5px;
+                  font-weight: 600;
+                ">Informacje osobiste</h3>
+                
+                <div style="
+                  display: grid;
+                  grid-template-columns: 120px 1fr;
+                  row-gap: 12px;
+                  column-gap: 10px;
+                ">
+                  <div style="font-weight: 600; color: var(--text-secondary);">Data urodzenia:</div>
+                  <div style="color: var(--text-primary);">{formatDate(user()?.dob.date)} ({user()?.dob.age} lat)</div>
+                  
+                  <div style="font-weight: 600; color: var(--text-secondary);">Rejestracja:</div>
+                  <div style="color: var(--text-primary);">{formatDate(user()?.registered.date)}</div>
+                  
+                  <div style="font-weight: 600; color: var(--text-secondary);">Narodowość:</div>
+                  <div style="color: var(--text-primary);">{user()?.nat}</div>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <div class="card" style="padding: 30px; margin-top: 20px;">
+            <h3 style="
+              color: var(--primary-color);
+              font-size: 1.2rem;
+              margin-top: 0;
+              margin-bottom: 20px;
+              border-bottom: 2px solid var(--border-color);
+              padding-bottom: 12px;
+            ">
+              Adres
+            </h3>
+            
+            <div style="
+              display: grid;
+              grid-template-columns: 120px 1fr;
+              row-gap: 16px;
+              column-gap: 20px;
+            ">
+              <div style="font-weight: 600; color: var(--text-secondary);">Ulica:</div>
+              <div style="color: var(--text-primary);">{user()?.location.street.name} {user()?.location.street.number}</div>
+              
+              <div style="font-weight: 600; color: var(--text-secondary);">Miasto:</div>
+              <div style="color: var(--text-primary);">{user()?.location.city}</div>
+              
+              <div style="font-weight: 600; color: var(--text-secondary);">Województwo:</div>
+              <div style="color: var(--text-primary);">{user()?.location.state}</div>
+              
+              <div style="font-weight: 600; color: var(--text-secondary);">Kraj:</div>
+              <div style="color: var(--text-primary);">{user()?.location.country}</div>
+              
+              <div style="font-weight: 600; color: var(--text-secondary);">Kod pocztowy:</div>
+              <div style="color: var(--text-primary);">{user()?.location.postcode}</div>
+            </div>
+          </div>
+        </>
       )}
     </div>
   );

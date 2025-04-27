@@ -1,63 +1,90 @@
-import { JSX, createSignal, createResource } from 'solid-js';
+import { JSX, createResource } from 'solid-js';
 import { A } from '@solidjs/router';
-
-interface User {
-  id: number;
-  name: string;
-  email: string;
-}
-
-// Simulate fetching users from an API
-const fetchUsers = async (): Promise<User[]> => {
-  // Simulate network delay
-  await new Promise(resolve => setTimeout(resolve, 500));
-  
-  return [
-    { id: 1, name: 'John Doe', email: 'john@example.com' },
-    { id: 2, name: 'Jane Smith', email: 'jane@example.com' },
-    { id: 3, name: 'Bob Johnson', email: 'bob@example.com' },
-    { id: 4, name: 'Alice Brown', email: 'alice@example.com' },
-  ];
-};
+import { userApi, User as ApiUser, formatUserName } from '../services/api';
 
 const UsersList = (): JSX.Element => {
-  const [users] = createResource(fetchUsers);
+  // Fetch users from Poland (pl) to get more Polish-like data
+  const [users] = createResource(() => userApi.getUsers(10, 'pl'));
   
   return (
-    <div class="users-list">
-      <h2 class="text-xl font-semibold mb-4">Users List</h2>
+    <div style="
+      padding: 20px;
+      animation: fadeIn var(--transition-medium) forwards;
+    ">
+      <h1 style="
+        color: var(--text-primary);
+        font-size: 1.8rem;
+        margin-bottom: 24px;
+        font-weight: 700;
+      ">
+        Lista użytkowników
+      </h1>
       
-      <div class="loading-state">
-        {users.loading && <p>Loading users...</p>}
-      </div>
+      {users.loading && (
+        <div class="card" style="padding: 30px; text-align: center;">
+          <p style="color: var(--text-secondary);">Ładowanie użytkowników...</p>
+        </div>
+      )}
       
-      <div class="error-state">
-        {users.error && <p class="text-red-500">Error loading users: {users.error.message}</p>}
-      </div>
+      {users.error && (
+        <div style="
+          padding: 16px; 
+          background-color: rgba(231, 76, 60, 0.1); 
+          border-radius: var(--border-radius-md); 
+          color: var(--danger-color);
+          margin-bottom: 20px;
+          border-left: 3px solid var(--danger-color);
+        ">
+          <p>Błąd ładowania użytkowników: {users.error.message}</p>
+        </div>
+      )}
       
       {users() && (
-        <ul class="space-y-2">
-          {users()?.map((user: User) => (
-            <li class="p-3 bg-white rounded shadow">
-              <div class="font-medium">{user.name}</div>
-              <div class="text-gray-600">{user.email}</div>
-              <div class="mt-2 space-x-3">
-                <A 
-                  href={`/users/${user.id}`}
-                  class="text-blue-500 hover:underline"
-                >
-                  View Profile
-                </A>
-                <A 
-                  href={`/users/${user.id}/posts`}
-                  class="text-blue-500 hover:underline"
-                >
-                  View Posts
-                </A>
+        <div style="display: flex; flex-direction: column; gap: 16px;">
+          {users()?.map((user: ApiUser) => (
+            <div class="card" style="padding: 20px; display: flex; gap: 20px;">
+              <div style="flex-shrink: 0;">
+                <img 
+                  src={user.picture.medium} 
+                  alt={formatUserName(user)}
+                  style="width: 80px; height: 80px; border-radius: 50%; object-fit: cover;"
+                />
               </div>
-            </li>
+              <div style="flex-grow: 1;">
+                <div style="
+                  font-weight: 600; 
+                  color: var(--text-primary);
+                  margin-bottom: 4px;
+                  font-size: 1.1rem;
+                ">
+                  {formatUserName(user)}
+                </div>
+                <div style="color: var(--text-secondary); margin-bottom: 4px;">
+                  {user.email}
+                </div>
+                <div style="color: var(--text-secondary); margin-bottom: 12px; font-size: 0.9rem;">
+                  {user.location.city}, {user.location.country} • {user.phone}
+                </div>
+                <div style="display: flex; gap: 16px; margin-top: 12px;">
+                  <A 
+                    href={`/users/${user.login.uuid}`}
+                    class="btn btn-primary"
+                    style="font-size: 0.9rem; padding: 8px 16px;"
+                  >
+                    Zobacz profil
+                  </A>
+                  <A 
+                    href={`/users/${user.login.uuid}/posts`}
+                    class="btn btn-secondary"
+                    style="font-size: 0.9rem; padding: 8px 16px;"
+                  >
+                    Zobacz posty
+                  </A>
+                </div>
+              </div>
+            </div>
           ))}
-        </ul>
+        </div>
       )}
     </div>
   );

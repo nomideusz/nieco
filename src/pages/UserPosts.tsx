@@ -1,118 +1,118 @@
-import { JSX, createResource } from 'solid-js';
+import { createResource } from 'solid-js';
 import { useParams, A } from '@solidjs/router';
+import { userApi, Post, formatUserName } from '../services/api';
 
-interface Post {
-  id: number;
-  title: string;
-  content: string;
-  date: string;
-}
-
-interface User {
-  id: number;
-  name: string;
-}
-
-// Simulate fetching posts for a user
-const fetchUserPosts = async (userId: string) => {
-  // Simulate network delay
-  await new Promise(resolve => setTimeout(resolve, 800));
-  
-  // Sample user data
-  const users: Record<string, User> = {
-    '1': { id: 1, name: 'John Doe' },
-    '2': { id: 2, name: 'Jane Smith' },
-    '3': { id: 3, name: 'Bob Johnson' },
-    '4': { id: 4, name: 'Alice Brown' },
-  };
-  
-  // Sample posts data by user
-  const postsByUser: Record<string, Post[]> = {
-    '1': [
-      { id: 101, title: 'Getting Started with SolidJS', content: 'SolidJS is a declarative JavaScript library for creating user interfaces...', date: '2023-03-15' },
-      { id: 102, title: 'SolidJS vs React', content: 'While both libraries serve the same purpose, they differ in several key aspects...', date: '2023-04-02' },
-      { id: 103, title: 'State Management in SolidJS', content: 'SolidJS provides powerful primitives for managing state...', date: '2023-05-10' },
-    ],
-    '2': [
-      { id: 201, title: 'CSS Grid Layout', content: 'CSS Grid Layout offers a grid-based layout system with rows and columns...', date: '2023-02-18' },
-      { id: 202, title: 'The Future of CSS', content: 'New CSS features are constantly being developed...', date: '2023-04-25' },
-    ],
-    '3': [
-      { id: 301, title: 'TypeScript Best Practices', content: 'TypeScript adds static types to JavaScript, improving developer experience...', date: '2023-01-30' },
-      { id: 302, title: 'Advanced TypeScript Patterns', content: 'TypeScript offers powerful type manipulation capabilities...', date: '2023-03-12' },
-      { id: 303, title: 'TypeScript and SolidJS', content: 'SolidJS works great with TypeScript, providing type safety...', date: '2023-05-05' },
-      { id: 304, title: 'Understanding TypeScript Generics', content: 'Generics are a powerful feature of TypeScript...', date: '2023-06-20' },
-    ],
-    '4': [
-      { id: 401, title: 'UI Design Principles', content: 'Good UI design follows certain principles that enhance usability...', date: '2023-02-10' },
-      { id: 402, title: 'Color Theory for Developers', content: 'Understanding color theory can improve your UI designs...', date: '2023-04-15' },
-    ],
-  };
-  
-  const user = users[userId];
-  const posts = postsByUser[userId] || [];
-  
-  if (!user) {
-    throw new Error(`User with ID ${userId} not found`);
-  }
-  
-  return { user, posts };
-};
-
-const UserPosts = (): JSX.Element => {
+const UserPosts = () => {
   const params = useParams();
-  const [userData] = createResource(() => params.userId, fetchUserPosts);
+  const [user] = createResource(() => params.userId, userApi.getUser);
+  const [posts] = createResource(() => params.userId, userApi.getUserPosts);
+  
+  // Format date for display
+  const formatDate = (dateString?: string) => {
+    if (!dateString) return '';
+    const date = new Date(dateString);
+    return `${date.getDate()}.${date.getMonth() + 1}.${date.getFullYear()}`;
+  };
+  
+  const getUserName = () => {
+    if (!user()) return '';
+    return formatUserName(user()!);
+  };
   
   return (
-    <div class="user-posts">
-      <h2 class="text-xl font-semibold mb-4">User Posts</h2>
-      
-      <div class="loading-state">
-        {userData.loading && <p>Loading posts...</p>}
-      </div>
-      
-      <div class="error-state">
-        {userData.error && (
-          <div class="p-4 bg-red-100 text-red-700 rounded mb-4">
-            <p>Error: {userData.error.message}</p>
-            <p class="mt-2">
-              <A href="/users" class="text-blue-500 hover:underline">
-                Back to Users List
-              </A>
-            </p>
-          </div>
+    <div style="
+      padding: 20px;
+      animation: fadeIn var(--transition-medium) forwards;
+    ">
+      <div style="display: flex; gap: 20px; align-items: center; margin-bottom: 24px;">
+        {user() && (
+          <img 
+            src={user()!.picture.medium} 
+            alt={getUserName()}
+            style="
+              width: 60px; 
+              height: 60px; 
+              border-radius: 50%; 
+              object-fit: cover;
+              border: 3px solid var(--bg-light);
+            "
+          />
         )}
+        <h1 style="
+          color: var(--text-primary);
+          font-size: 1.8rem;
+          margin: 0;
+          font-weight: 700;
+        ">
+          {user() ? `Posty użytkownika: ${getUserName()}` : "Ładowanie..."}
+        </h1>
       </div>
       
-      {userData() && (
-        <>
-          <div class="user-info mb-6 p-4 bg-blue-50 rounded border border-blue-200">
-            <h3 class="text-lg font-medium">Posts by {userData()?.user.name}</h3>
-            <p class="text-gray-600">User ID: {userData()?.user.id}</p>
-            <A 
-              href={`/users/${params.userId}`} 
-              class="text-blue-500 hover:underline inline-block mt-2"
-            >
-              Back to User Profile
-            </A>
-          </div>
-          
-          {userData()?.posts.length === 0 ? (
-            <div class="p-4 bg-gray-50 rounded text-center">
-              <p>No posts found for this user.</p>
+      <div style="margin-bottom: 20px;">
+        <A href={`/users/${params.userId}`} class="btn btn-secondary">
+          Powrót do profilu użytkownika
+        </A>
+      </div>
+      
+      {/* Loading state */}
+      {posts.loading && (
+        <div class="card" style="padding: 30px; text-align: center;">
+          <p style="color: var(--text-secondary);">Ładowanie postów użytkownika...</p>
+        </div>
+      )}
+      
+      {/* Error state */}
+      {posts.error && (
+        <div style="
+          padding: 16px; 
+          background-color: rgba(231, 76, 60, 0.1); 
+          border-radius: var(--border-radius-md); 
+          color: var(--danger-color);
+          margin-bottom: 20px;
+          border-left: 3px solid var(--danger-color);
+        ">
+          <p>Błąd: {posts.error.message}</p>
+        </div>
+      )}
+      
+      {/* Posts list */}
+      {posts() && posts()!.length > 0 && (
+        <div style="display: flex; flex-direction: column; gap: 16px;">
+          {posts()!.map((post: Post) => (
+            <div class="card" style="padding: 24px;">
+              <h2 style="
+                color: var(--primary-color);
+                font-size: 1.2rem;
+                margin-top: 0;
+                margin-bottom: 8px;
+                font-weight: 600;
+              ">
+                {post.title}
+              </h2>
+              <div style="
+                color: var(--text-muted);
+                font-size: 0.85rem;
+                margin-bottom: 14px;
+              ">
+                Data publikacji: {formatDate(post.date)}
+              </div>
+              <p style="
+                color: var(--text-secondary);
+                line-height: 1.6;
+                margin: 0;
+              ">
+                {post.body}
+              </p>
             </div>
-          ) : (
-            <div class="posts-list space-y-4">
-              {userData()?.posts.map((post: Post) => (
-                <article class="bg-white p-4 rounded shadow">
-                  <h3 class="text-lg font-semibold">{post.title}</h3>
-                  <p class="text-gray-500 text-sm mb-2">Posted on {post.date}</p>
-                  <p class="text-gray-700">{post.content}</p>
-                </article>
-              ))}
-            </div>
-          )}
-        </>
+          ))}
+        </div>
+      )}
+      
+      {/* No posts state */}
+      {posts() && posts()!.length === 0 && (
+        <div class="card" style="padding: 30px; text-align: center;">
+          <p style="color: var(--text-secondary);">Ten użytkownik nie ma żadnych postów.</p>
+        </div>
       )}
     </div>
   );
